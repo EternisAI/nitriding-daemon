@@ -359,7 +359,7 @@ func (e *Enclave) Start() error {
 	// Check if we are the leader.
 	if !e.weAreLeader() {
 		elog.Println("Obtaining worker's hostname.")
-		worker := getSyncURL(getHostnameOrDie(), e.cfg.ExtPrivPort)
+		worker := getSyncURL(e.cfg.FQDN, e.cfg.ExtPrivPort)
 		err = asWorker(e.setupWorkerPostSync, e.attester).registerWith(leader, worker)
 		if err != nil {
 			elog.Fatalf("Error syncing with leader: %v", err)
@@ -449,7 +449,7 @@ func (e *Enclave) setupWorkerPostSync(keys *enclaveKeys) error {
 	e.httpsCert.set(&cert)
 
 	// Start our heartbeat.
-	worker := getSyncURL(getHostnameOrDie(), e.cfg.ExtPrivPort)
+	worker := getSyncURL(e.cfg.FQDN, e.cfg.ExtPrivPort)
 	go e.workerHeartbeat(worker)
 
 	return nil
