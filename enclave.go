@@ -416,7 +416,7 @@ func (e *Enclave) weAreLeader() (result bool) {
 		},
 	)
 
-	timeout := time.NewTicker(10 * time.Second)
+	timeout := time.NewTicker(500 * time.Second)
 	for {
 		go makeLeaderRequest(leader, ourNonce, areWeLeader, errChan)
 		select {
