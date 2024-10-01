@@ -34,8 +34,8 @@ var (
 	errKeySyncDisabled       = errors.New("key synchronization is disabled")
 )
 
-func errNo200(code int) error {
-	return fmt.Errorf("peer responded with HTTP code %d", code)
+func errNo200(code int, url string, reason string) error {
+	return fmt.Errorf("peer responded with HTTP code %d to %s: %s", code, url, reason)
 }
 
 func formatIndexPage(appURL *url.URL) string {

@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  nitriding-leader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "443:443"
+      - "444:444"
+    command: ["-fqdn", "nitriding-leader", "--fqdn-leader", "nitriding-leader", "-debug"]
+    volumes:
+      - ./config:/nitriding/config
+      - ./data:/nitriding/data
+    networks:
+      - leader-network
+      - inter-service-network
+      - external-network
+
+  nitriding-follower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+      - "8443:443"
+      - "8444:444"
+    command: ["-fqdn", "nitriding-follower", "--fqdn-leader", "nitriding-leader", "-debug"]
+    volumes:
+      - ./config:/nitriding/config
+      - ./data:/nitriding/data
+    networks:
+      - follower-network
+      - inter-service-network
+      - external-network
+    depends_on:
+      - nitriding-leader
+
+networks:
+  leader-network:
+    internal: true
+  follower-network:
+    internal: true
+  inter-service-network:
+    internal: true
+  external-network:
+    driver: bridge

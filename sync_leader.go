@@ -65,7 +65,7 @@ func (s *leaderSync) syncWith(worker *url.URL) (err error) {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errNo200(resp.StatusCode)
+		return errNo200(resp.StatusCode, reqURL.String(), "while requesting attestation")
 	}
 
 	// Step 3: Verify the worker's attestation document and extract its
@@ -135,7 +135,7 @@ func (s *leaderSync) syncWith(worker *url.URL) (err error) {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errNo200(resp.StatusCode)
+		return errNo200(resp.StatusCode, worker.String(), "while syncing keys")
 	}
 
 	return nil
