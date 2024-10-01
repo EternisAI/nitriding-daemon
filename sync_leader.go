@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"time"
@@ -35,6 +36,26 @@ func asLeader(keys *enclaveKeys, a attester) *leaderSync {
 	}
 }
 
+func retryWithBackoff(maxRetries int, maxWait time.Duration, operation func() (*http.Response, error)) (*http.Response, error) {
+	var resp *http.Response
+	var err error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		resp, err = operation()
+		if err == nil && resp.StatusCode == http.StatusOK {
+			return resp, nil
+		}
+
+		waitTime := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+		if waitTime > maxWait {
+			waitTime = maxWait
+		}
+
+		elog.Printf("Attempt %d failed, retrying in %v: %v", attempt+1, waitTime, err)
+		time.Sleep(waitTime)
+	}
+	return resp, err // Return the last response and error
+}
+
 // syncWith makes the leader initiate key synchronization with the given worker
 // enclave.
 func (s *leaderSync) syncWith(worker *url.URL) (err error) {
@@ -57,16 +78,17 @@ func (s *leaderSync) syncWith(worker *url.URL) (err error) {
 		return err
 	}
 
-	elog.Printf("Created nonce: %v \n Sleeping for 10 seconds", nonce)
-	time.Sleep(10 * time.Second)
+	elog.Printf("Created nonce: %v", nonce)
 
 	// Step 2: Request the worker's attestation document, and provide the
 	// previously-generated nonce.
 	reqURL := *worker
 	reqURL.RawQuery = fmt.Sprintf("nonce=%x", nonce)
-	resp, err := newUnauthenticatedHTTPClient().Get(reqURL.String())
+	resp, err := retryWithBackoff(5, 1*time.Minute, func() (*http.Response, error) {
+		return newUnauthenticatedHTTPClient().Get(reqURL.String())
+	})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get attestation document: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return errNo200(resp.StatusCode, reqURL.String(), "while requesting attestation")
