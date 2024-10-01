@@ -65,6 +65,8 @@ func _getPCRValues() (map[uint][]byte, error) {
 // arePCRsIdentical returns true if (and only if) the two given PCR maps are
 // identical.
 func arePCRsIdentical(ourPCRs, theirPCRs map[uint][]byte) bool {
+	elog.Printf("ourPCRs: %v\n", ourPCRs)
+	elog.Printf("theirPCRs: %v\n", theirPCRs)
 	if len(ourPCRs) != len(theirPCRs) {
 		return false
 	}
