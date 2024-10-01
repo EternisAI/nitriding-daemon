@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"golang.org/x/crypto/nacl/box"
 )
@@ -55,6 +56,9 @@ func (s *leaderSync) syncWith(worker *url.URL) (err error) {
 	if err != nil {
 		return err
 	}
+
+	elog.Printf("Created nonce: %v \n Sleeping for 10 seconds", nonce)
+	time.Sleep(10 * time.Second)
 
 	// Step 2: Request the worker's attestation document, and provide the
 	// previously-generated nonce.
