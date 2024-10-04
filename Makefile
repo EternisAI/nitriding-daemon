@@ -4,6 +4,7 @@ cover_out = cover.out
 cover_html = cover.html
 
 ARCH ?= amd64
+OS ?= linux
 
 all: lint test $(binary)
 
@@ -26,7 +27,7 @@ $(cover_html): $(cover_out)
 	go tool cover -html=$(cover_out) -o $(cover_html)
 
 $(binary): $(godeps)
-	CGO_ENABLED=0 GOOS=linux GOARCH=$(ARCH) go build -trimpath -ldflags="-s -w" -buildvcs=false -o $(binary)
+	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) go build -trimpath -ldflags="-s -w" -buildvcs=false -o $(binary)
 
 .PHONY: clean
 clean:

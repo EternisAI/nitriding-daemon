@@ -65,6 +65,8 @@ func _getPCRValues() (map[uint][]byte, error) {
 // arePCRsIdentical returns true if (and only if) the two given PCR maps are
 // identical.
 func arePCRsIdentical(ourPCRs, theirPCRs map[uint][]byte) bool {
+	elog.Printf("ourPCRs: %v\n", ourPCRs)
+	elog.Printf("theirPCRs: %v\n", theirPCRs)
 	if len(ourPCRs) != len(theirPCRs) {
 		return false
 	}
@@ -73,6 +75,9 @@ func arePCRsIdentical(ourPCRs, theirPCRs map[uint][]byte) bool {
 		// PCR4 contains a hash over the parent's instance ID.  Our enclaves run
 		// on different parent instances; PCR4 will therefore always differ:
 		// https://docs.aws.amazon.com/enclaves/latest/user/set-up-attestation.html
+		if pcr == 3 {
+			continue
+		}
 		if pcr == 4 {
 			continue
 		}

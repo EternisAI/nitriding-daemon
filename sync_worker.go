@@ -36,6 +36,7 @@ func asWorker(
 	setupWorker func(*enclaveKeys) error,
 	a attester,
 ) *workerSync {
+	elog.Printf("Setting up worker sync")
 	return &workerSync{
 		attester:      a,
 		setupWorker:   setupWorker,
@@ -127,6 +128,7 @@ func (s *workerSync) initSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.nonce <- workersNonce
+	elog.Printf("Created worker nonce: %v", workersNonce)
 
 	// Create an ephemeral key that the leader is going to use to encrypt
 	// its enclave keys.
@@ -136,7 +138,7 @@ func (s *workerSync) initSync(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.ephemeralKeys <- boxKey
-
+	elog.Printf("Created ephemeral key: %v", boxKey)
 	// Create and return the worker's Base64-encoded attestation document.
 	attstnDoc, err := s.createAttstn(&workerAuxInfo{
 		WorkersNonce: workersNonce,
@@ -147,6 +149,7 @@ func (s *workerSync) initSync(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	elog.Printf("Created attestation document: %v", attstnDoc)
 
 	respBody, err := json.Marshal(&attstnBody{
 		Document: base64.StdEncoding.EncodeToString(attstnDoc),

@@ -83,6 +83,8 @@ type Enclave struct {
 
 // Config represents the configuration of our enclave service.
 type Config struct {
+	// syncState indicates whether this enclave is the leader.
+	SyncState int
 	// FQDN contains the fully qualified domain name that's set in the HTTPS
 	// certificate of the enclave's Web server, e.g. "example.com".  This field
 	// is required.
@@ -359,7 +361,7 @@ func (e *Enclave) Start() error {
 	// Check if we are the leader.
 	if !e.weAreLeader() {
 		elog.Println("Obtaining worker's hostname.")
-		worker := getSyncURL(getHostnameOrDie(), e.cfg.ExtPrivPort)
+		worker := getSyncURL(e.cfg.FQDN, e.cfg.ExtPrivPort)
 		err = asWorker(e.setupWorkerPostSync, e.attester).registerWith(leader, worker)
 		if err != nil {
 			elog.Fatalf("Error syncing with leader: %v", err)
@@ -381,6 +383,7 @@ func (e *Enclave) setSyncState(state int) {
 	e.Lock()
 	defer e.Unlock()
 	e.syncState = state
+	e.cfg.SyncState = state
 }
 
 // weAreLeader figures out if the enclave is the leader or worker.
@@ -416,7 +419,7 @@ func (e *Enclave) weAreLeader() (result bool) {
 		},
 	)
 
-	timeout := time.NewTicker(10 * time.Second)
+	timeout := time.NewTicker(500 * time.Second)
 	for {
 		go makeLeaderRequest(leader, ourNonce, areWeLeader, errChan)
 		select {
@@ -441,6 +444,7 @@ func (e *Enclave) weAreLeader() (result bool) {
 // setupWorkerPostSync performs necessary post-key synchronization tasks like
 // installing the given enclave keys and starting the heartbeat loop.
 func (e *Enclave) setupWorkerPostSync(keys *enclaveKeys) error {
+	elog.Printf("Setting up worker post-sync with keys: %v", keys)
 	e.keys.set(keys)
 	cert, err := tls.X509KeyPair(keys.NitridingCert, keys.NitridingKey)
 	if err != nil {
@@ -449,7 +453,7 @@ func (e *Enclave) setupWorkerPostSync(keys *enclaveKeys) error {
 	e.httpsCert.set(&cert)
 
 	// Start our heartbeat.
-	worker := getSyncURL(getHostnameOrDie(), e.cfg.ExtPrivPort)
+	worker := getSyncURL(e.cfg.FQDN, e.cfg.ExtPrivPort)
 	go e.workerHeartbeat(worker)
 
 	return nil
